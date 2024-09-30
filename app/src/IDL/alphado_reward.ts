@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/alphado_reward.json`.
  */
 export type AlphadoReward = {
-  "address": "2iqzG1DNfHqiGCru892VMKxhFnoiwDxQVRNtL4P3djt2",
+  "address": "Bf2tE1eVhDgZXQy94ehSfXA5QCG5hfMo7yXQxKP1jQc1",
   "metadata": {
     "name": "alphadoReward",
     "version": "0.1.0",

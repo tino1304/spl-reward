@@ -6,7 +6,7 @@ import { Buffer } from 'buffer';
 import { AlphadoReward } from "@/IDL/alphado_reward.ts";
 import IDL from "@/IDL/alphado_reward.json"
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnchorProvider, BN, Program, Wallet } from "@coral-xyz/anchor";
 import { hex } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import WalletConnector from "./components/WalletConnector";
@@ -17,10 +17,27 @@ const TOKEN_MINT = "5oQrnYuTJQw68rpghJYd8CRYaDu8tHRor413td81Dn1h";
 
 function App() {
   const [hash, setHash] = useState('');
+  const [tokenVault, setTokenVault] = useState('');
   const [encodedTx, setEncodedTx] = useState('');
 
   const { connection } = useConnection();
   const wallet = useWallet();
+
+  useEffect(() => {
+    (async () => {
+      const program = new Program<AlphadoReward>(
+        IDL as AlphadoReward,
+        new AnchorProvider(connection, wallet as unknown as Wallet),
+      );
+
+      const [vaultPDA] = await PublicKey.findProgramAddressSync(
+        [Buffer.from("vault")],
+        program.programId
+      );
+
+      setTokenVault(vaultPDA.toString());
+    })()
+  }, [connection, wallet]);
 
   const init = async () => {
     if (!wallet?.publicKey) {
@@ -115,13 +132,17 @@ function App() {
   return (
     <div className="flex flex-col gap-3">
       <WalletConnector />
-      {/* <div>
-        <div>1. Owner initialization (1 time only)</div>
+      <div>
+        <div>0. Owner initialization (1 time only)</div>
         <button
           className="px-4 py-1 bg-indigo-600 text-white text-center rounded"
           onClick={init}
         >Initialize</button>
-      </div> */}
+      </div>
+      <div>
+        <div>0,5. Transfer ADT to vault</div>
+        Vault address: {tokenVault}
+      </div>
       <div>
         <div>1. Backend create instruction and sign (by owner wallet)</div>
         <button

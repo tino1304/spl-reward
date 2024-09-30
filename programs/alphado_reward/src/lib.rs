@@ -2,14 +2,14 @@ use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-declare_id!("2iqzG1DNfHqiGCru892VMKxhFnoiwDxQVRNtL4P3djt2");
+declare_id!("Bf2tE1eVhDgZXQy94ehSfXA5QCG5hfMo7yXQxKP1jQc1");
 
 #[program]
 pub mod alphado_reward {
     use super::*;
 
     const TOKEN_MINT: Pubkey = pubkey!("5oQrnYuTJQw68rpghJYd8CRYaDu8tHRor413td81Dn1h");
-    const OWNER: Pubkey = pubkey!("3ov7mX1aTxNLcL9CrLoFmgFmZPKThRr2LovZ5uWZCcuJ");
+    const OWNER: Pubkey = pubkey!("Caqpb79YNanrtJufZLciH6vLT4GcWbjZBo6J7KiSQubw");
 
     pub fn initialize(ctx: Context<Initialize>, bump: u8) -> Result<()> {
         require_eq!(ctx.accounts.mint.key(), TOKEN_MINT.key());
