@@ -1,4 +1,4 @@
-import { Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction } from "@solana/web3.js";
+import { Keypair, PublicKey, Transaction } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import bs58 from 'bs58';
 import { Buffer } from 'buffer';
@@ -14,6 +14,7 @@ import clsx from "clsx";
 
 const PRIVATE_KEY= ""; //Program Owner
 const TOKEN_MINT = "5oQrnYuTJQw68rpghJYd8CRYaDu8tHRor413td81Dn1h";
+const TOKEN_DECIMALS = 9;
 
 function App() {
   const [hash, setHash] = useState('');
@@ -22,6 +23,36 @@ function App() {
 
   const { connection } = useConnection();
   const wallet = useWallet();
+
+  const gettUserAccount = async () => {
+    if (!wallet?.publicKey) {
+      console.log('invalid wallet');
+      return;
+    }
+
+    const program = new Program<AlphadoReward>(
+      IDL as AlphadoReward,
+      new AnchorProvider(connection, wallet as unknown as Wallet),
+    );
+
+    const [userAccountPda] = await PublicKey.findProgramAddressSync(
+      [Buffer.from("user"), wallet.publicKey.toBuffer()],
+      program.programId
+    );
+  
+    // Fetch the user account data
+    const userAccount = await program.account.userAccount.fetch(userAccountPda).catch(e => {
+      console.log(e);
+      return null;
+    });
+    console.log("UserAccount data:",
+      userAccount?.claimedAmount?.toNumber(),
+      userAccount?.maxClaimableAmount?.toNumber(),
+      userAccount?.nonce?.toNumber()
+    );
+
+    return userAccount;
+  }
 
   useEffect(() => {
     (async () => {
@@ -73,6 +104,7 @@ function App() {
 
   const backendSign = async () => {
     if (!wallet?.publicKey || !wallet?.signTransaction) {
+      console.log('invalid wallet');
       return;
     }
 
@@ -87,29 +119,57 @@ function App() {
       return;
     }
 
+    // vault - token_account for the reward contract
     const [vaultPDA, vaultBump] = await PublicKey.findProgramAddressSync(
       [Buffer.from("vault")],
       program.programId
     );
 
+    // user on-chain data, including:
+    // 1. nonce: a kind of index, increase by 1 each time user call claim
+    // 2. claimed_amount
+    // 3. max_claimable_amount
+    const userAccount = await gettUserAccount();
+
+    const claimAmount = 10;
+    // The overall claimable amount of a user
+    // user claim the first time with 10 ADT, max_claimable_amount = 10
+    // user claim the second time with 20 ADT, max_claimable_amount = 30
+    // user claim the 3rd time with 25 ADT, max_claimable_amount = 45
+    const maxClaimableAmount = userAccount?.maxClaimableAmount 
+      ? userAccount.maxClaimableAmount.toNumber() / (10**TOKEN_DECIMALS) + claimAmount
+      : claimAmount;
+
+    // calculate new nonce
+    const nonce = userAccount?.nonce ? userAccount.nonce.toNumber() + 1 : 1;
+
+    // transaction builder
     const txBuilder = await program.methods
-    // 10 is the amount of ADT that user receive, backend should calculate this amount and set it here
-    .claimRewardWithPermission(new BN(10 * LAMPORTS_PER_SOL), vaultBump)
+    .claimRewardWithPermission(
+      new BN(claimAmount * (10 ** TOKEN_DECIMALS)),
+      vaultBump,
+      new BN(maxClaimableAmount * (10 ** TOKEN_DECIMALS)),
+      new BN(nonce),
+    )
     .accounts({
       vault: vaultPDA,
       owner: new PublicKey(owner.publicKey),
       mint: new PublicKey(TOKEN_MINT),
     }).transaction();
 
+    // require this config
     txBuilder.recentBlockhash = (
       await program.provider.connection.getLatestBlockhash()
     ).blockhash;
 
+    // require this config
     txBuilder.feePayer = wallet.publicKey;
 
+    // backend sign
     txBuilder.partialSign(owner);
     
-    setEncodedTx(hex.encode(txBuilder.serialize()))
+    // encode transaction and return to FE
+    setEncodedTx(txBuilder.serialize({ requireAllSignatures: false }).toString('hex'))
   };
 
   const frontendSign = async () => {
@@ -118,8 +178,6 @@ function App() {
     }
 
     const txBuilder = Transaction.from(hex.decode(encodedTx));
-
-    console.log(txBuilder);
 
     const signedTx = await wallet.signTransaction(txBuilder); // signing the recovered transaction using the creator_wall
     const hash = await connection.sendRawTransaction(

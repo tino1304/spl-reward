@@ -1,5 +1,5 @@
 {
-  "address": "Bf2tE1eVhDgZXQy94ehSfXA5QCG5hfMo7yXQxKP1jQc1",
+  "address": "EmU7VavekjaMAWdtqm4K1yzQCXTLNj3qEwvrNgxz7LnK",
   "metadata": {
     "name": "alphado_reward",
     "version": "0.1.0",
@@ -36,6 +36,27 @@
         },
         {
           "name": "mint"
+        },
+        {
+          "name": "user_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "sender"
+              }
+            ]
+          }
         },
         {
           "name": "user_token_account",
@@ -148,6 +169,14 @@
         {
           "name": "bump",
           "type": "u8"
+        },
+        {
+          "name": "max_claimable_amount",
+          "type": "u64"
+        },
+        {
+          "name": "nonce",
+          "type": "u64"
         }
       ]
     },
@@ -209,6 +238,47 @@
           "type": "u8"
         }
       ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "UserAccount",
+      "discriminator": [
+        211,
+        33,
+        136,
+        16,
+        186,
+        110,
+        242,
+        127
+      ]
+    }
+  ],
+  "types": [
+    {
+      "name": "UserAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user_token_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "claimed_amount",
+            "type": "u64"
+          },
+          {
+            "name": "max_claimable_amount",
+            "type": "u64"
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          }
+        ]
+      }
     }
   ]
 }

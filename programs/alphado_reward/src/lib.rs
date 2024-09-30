@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-declare_id!("Bf2tE1eVhDgZXQy94ehSfXA5QCG5hfMo7yXQxKP1jQc1");
+declare_id!("EmU7VavekjaMAWdtqm4K1yzQCXTLNj3qEwvrNgxz7LnK");
 
 #[program]
 pub mod alphado_reward {
@@ -21,24 +21,35 @@ pub mod alphado_reward {
         ctx: Context<ClaimRewardWithPermission>,
         amount: u64,
         bump: u8,
+        max_claimable_amount: u64,
+        nonce: u64,
     ) -> Result<()> {
         require_eq!(ctx.accounts.owner.key(), OWNER.key());
         require_eq!(ctx.accounts.vault.mint.key(), TOKEN_MINT.key());
 
-        // Derive the PDA and sign the CPI transfer using the PDA
+        let user_account = &mut ctx.accounts.user_account;
+
+        require_eq!(nonce, user_account.nonce + 1);
+        require_gte!(max_claimable_amount, user_account.max_claimable_amount);
+        require_gte!(max_claimable_amount, user_account.claimed_amount + amount);
+
         let vault_seeds: &[&[u8]] = &[b"vault".as_ref(), &[bump]];
         let signer_seeds = &[vault_seeds];
 
         let cpi_accounts = Transfer {
             from: ctx.accounts.vault.to_account_info(),
             to: ctx.accounts.user_token_account.to_account_info(),
-            authority: ctx.accounts.vault.to_account_info(), // Vault itself is the authority
+            authority: ctx.accounts.vault.to_account_info(),
         };
 
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
 
         token::transfer(cpi_ctx, amount)?;
+
+        user_account.claimed_amount += amount;
+        user_account.max_claimable_amount = max_claimable_amount;
+        user_account.nonce += 1;
 
         Ok(())
     }
@@ -47,7 +58,6 @@ pub mod alphado_reward {
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct Initialize<'info> {
-    // Vault token account controlled by the program (PDA)
     #[account(
         init,
         seeds = [b"vault".as_ref()],
@@ -56,19 +66,17 @@ pub struct Initialize<'info> {
         token::mint = mint,
         token::authority = vault
     )]
-    pub vault: Account<'info, TokenAccount>, // Vault for storing the SPL token
+    pub vault: Account<'info, TokenAccount>,
 
-    // Constant mint account
     #[account()]
     pub mint: Account<'info, Mint>,
 
-    // The owner who initializes the vault
     #[account(mut)]
-    pub owner: Signer<'info>, // Program owner initializing the vault
+    pub owner: Signer<'info>,
 
-    pub token_program: Program<'info, Token>, // SPL Token program
-    pub rent: Sysvar<'info, Rent>,            // Rent system variable
-    pub system_program: Program<'info, System>, // System program
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>,
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -78,8 +86,16 @@ pub struct ClaimRewardWithPermission<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
     #[account(mut)]
-    pub vault: Account<'info, TokenAccount>, // Vault (PDA) used as authority
+    pub vault: Account<'info, TokenAccount>,
     pub mint: Account<'info, Mint>,
+    #[account(
+        init_if_needed,
+        payer = sender,
+        space = 8 + 32 + 8 + 8 + 8,
+        seeds = [b"user", sender.key().as_ref()],
+        bump
+    )]
+    pub user_account: Account<'info, UserAccount>,
     #[account(
         init_if_needed,
         payer = sender,
@@ -89,5 +105,13 @@ pub struct ClaimRewardWithPermission<'info> {
     pub user_token_account: Account<'info, TokenAccount>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Program<'info, Token>,
-    pub system_program: Program<'info, System>, // System program
+    pub system_program: Program<'info, System>,
+}
+
+#[account]
+pub struct UserAccount {
+    pub user_token_account: Pubkey,
+    pub claimed_amount: u64,
+    pub max_claimable_amount: u64,
+    pub nonce: u64,
 }

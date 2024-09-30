@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/alphado_reward.json`.
  */
 export type AlphadoReward = {
-  "address": "Bf2tE1eVhDgZXQy94ehSfXA5QCG5hfMo7yXQxKP1jQc1",
+  "address": "EmU7VavekjaMAWdtqm4K1yzQCXTLNj3qEwvrNgxz7LnK",
   "metadata": {
     "name": "alphadoReward",
     "version": "0.1.0",
@@ -42,6 +42,27 @@ export type AlphadoReward = {
         },
         {
           "name": "mint"
+        },
+        {
+          "name": "userAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "sender"
+              }
+            ]
+          }
         },
         {
           "name": "userTokenAccount",
@@ -154,6 +175,14 @@ export type AlphadoReward = {
         {
           "name": "bump",
           "type": "u8"
+        },
+        {
+          "name": "maxClaimableAmount",
+          "type": "u64"
+        },
+        {
+          "name": "nonce",
+          "type": "u64"
         }
       ]
     },
@@ -215,6 +244,47 @@ export type AlphadoReward = {
           "type": "u8"
         }
       ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "userAccount",
+      "discriminator": [
+        211,
+        33,
+        136,
+        16,
+        186,
+        110,
+        242,
+        127
+      ]
+    }
+  ],
+  "types": [
+    {
+      "name": "userAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "userTokenAccount",
+            "type": "pubkey"
+          },
+          {
+            "name": "claimedAmount",
+            "type": "u64"
+          },
+          {
+            "name": "maxClaimableAmount",
+            "type": "u64"
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          }
+        ]
+      }
     }
   ]
 };
