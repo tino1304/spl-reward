@@ -5,14 +5,20 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-alphado_reward = "BgycKLD6QaN72bYqQfaAHK2iqLutkRQur5bPN2t3gdHj"
+alphado_reward = "7yUhyypH3qAd7KTKpa31AKAv5bEbLtVL5Wf53QSemRvA"
+
+[programs.devnet]
+alphado_reward = "7yUhyypH3qAd7KTKpa31AKAv5bEbLtVL5Wf53QSemRvA"
+
+[programs.mainnet]
+alphado_reward = "7yUhyypH3qAd7KTKpa31AKAv5bEbLtVL5Wf53QSemRvA"
 
 [registry]
-url = "https://api.apr.dev"
+url = " https://api.mainnet-beta.solana.com"
 
 [provider]
-cluster = "Localnet"
-wallet = "~/.config/solana/id.json"
+cluster = "mainnet"
+wallet = "~/Projects/solana/its_production.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

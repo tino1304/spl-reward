@@ -2,14 +2,14 @@ use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-declare_id!("EmU7VavekjaMAWdtqm4K1yzQCXTLNj3qEwvrNgxz7LnK");
+declare_id!("7yUhyypH3qAd7KTKpa31AKAv5bEbLtVL5Wf53QSemRvA");
 
 #[program]
 pub mod alphado_reward {
     use super::*;
 
-    const TOKEN_MINT: Pubkey = pubkey!("5oQrnYuTJQw68rpghJYd8CRYaDu8tHRor413td81Dn1h");
-    const OWNER: Pubkey = pubkey!("Caqpb79YNanrtJufZLciH6vLT4GcWbjZBo6J7KiSQubw");
+    const TOKEN_MINT: Pubkey = pubkey!("Q3GYuGL11oXLt7u2Tm5XYdKvXxTd3i392ionzPtfMBJ");
+    const OWNER: Pubkey = pubkey!("E7oFYw5gBcyQv2xehYXpcqDpT9HnQJQSy8WASkQ2BtKN");
 
     pub fn initialize(ctx: Context<Initialize>, bump: u8) -> Result<()> {
         require_eq!(ctx.accounts.mint.key(), TOKEN_MINT.key());
@@ -26,6 +26,9 @@ pub mod alphado_reward {
     ) -> Result<()> {
         require_eq!(ctx.accounts.owner.key(), OWNER.key());
         require_eq!(ctx.accounts.vault.mint.key(), TOKEN_MINT.key());
+        require_eq!(ctx.accounts.mint.key(), TOKEN_MINT.key());
+        require_gt!(max_claimable_amount, 0);
+        require_gt!(amount, 0);
 
         let user_account = &mut ctx.accounts.user_account;
 
